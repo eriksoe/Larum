@@ -22,5 +22,6 @@ extern LarumBuiltIn *LARUM_BUILT_INS;
 enum BuiltInIDs {
     BI_MIN_RANGE = 0,
     BI_EXIT = 0,
+    BI_HELLO,
     BI_MAX_RANGE
 };

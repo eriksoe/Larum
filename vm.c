@@ -89,16 +89,14 @@ void vm_loop(Regs* regs) {
         return;
     }
     while (1) {
-        printf("DB| ISR before shift: %x\n", isr);
         int opcode = isr & OPCODE_MASK;
-        printf("DB| TOS %d @ %p\n", PEEK(), TOSp);
-        printf("DB| opcode: %d\n", opcode);
+        // printf("DB| TOS %d @ %p\n", PEEK(), TOSp);
+        // printf("DB| opcode: %d\n", opcode);
         isr >>= OPCODE_BITS;
         switch (opcode) {
             /*---------- Special -----------------------------------*/
         case FETCH_INS: {
             isr = READ_FROM_INS_STREAM();
-            printf("DB| FETCH_INS => %x\n", isr);
         } break;
         case NOP: {
         } break;
@@ -242,10 +240,25 @@ int main() {
         //{ASM(LIT, DUP, ADD, BUILTIN, NOP, NOP), 7};
         //{ASM(LIT, LIT, SUB, NOP, NOP, NOP), 7,9, ASM(LIT, LIT, SWAP, SUB, BUILTIN, NOP), 7,9};
     //{ASM(LIT, LIT, OVER, BUILTIN, NOP, NOP), 7,9};
+        /*
         {ASM(LIT, LIT, XOR, NOP, NOP, NOP), 3,9,
          ASM(LIT, LIT, AND, NOP, NOP, NOP), 3,9,
          ASM(LIT, LIT, OR, NOP, NOP, NOP), 3,9,
-         ASM(BUILTIN, BI_EXIT, NOP, NOP, NOP, NOP)};
+         ASM(BUILTIN, NOP, NOP, NOP, NOP, NOP), BI_EXIT};
+        */
+        /*
+        {ASM(BUILTIN, BUILTIN, NOP, NOP, NOP, NOP),
+         BI_HELLO, BI_EXIT};
+        */
+        /*
+        {ASM(BUILTIN, JMP, NOP, NOP, NOP, NOP), // Call "Hello" indefinitely.
+         BI_HELLO, 0};
+        */
+    {ASM(LIT, 0,0,0,0,0), 10, // Call "Hello" ten times.
+     ASM(JMPZ, BUILTIN, LIT_1, SUB, JMP, 0),
+     6, BI_HELLO, 1,
+     ASM(BUILTIN, 0,0,0,0,0), //TODO: ought to pop.
+     BI_EXIT};
     Word* ret_stack[100];
     Word data_stack[100];
     Word heap[4096];

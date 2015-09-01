@@ -11,7 +11,12 @@ static void LarumExit(Regs* state) {
     longjmp(state->jmp_env, 1);
 }
 
+static void LarumHello(Regs* state) {
+    printf("Hello, World!\n");
+}
+
 LarumBuiltIn LARUM_BUILT_INSx[] = {
-    [BI_EXIT] = LarumExit
+    [BI_EXIT] = LarumExit,
+    [BI_HELLO] = LarumHello
 };
 LarumBuiltIn* LARUM_BUILT_INS = LARUM_BUILT_INSx;
