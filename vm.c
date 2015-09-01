@@ -200,10 +200,10 @@ void vm_loop(Regs* regs) {
         } break;
     //----- By R:
         case LOAD_R_INC: {
-            PUSH((Word)(*Rp++));
+            //PUSH((Word)(*Rp++));
         } break;
         case STORE_R_INC: {
-            (*Rp++) = POP();
+            //(*Rp++) = POP();
         } break;
     /*---------- Special-operations ------------------------*/
         case BUILTIN: {
