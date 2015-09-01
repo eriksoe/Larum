@@ -1,5 +1,5 @@
 build:
-	g++ vm.c -o larum.exe
+	g++ *.c -o larum.exe
 
 clean:
 	rm *.o *.so *.exe || true

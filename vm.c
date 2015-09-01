@@ -1,5 +1,8 @@
 #include <stdint.h>
+#include <stdlib.h>
 #include <stdio.h>
+
+#include "vm.h"
 
 /* Small VM modelled closely on the stack-based "Gullwing" CPU design by
    Charles Eric LaForest.
@@ -64,16 +67,6 @@ enum Opcode {
     OPCODE_COUNT
 };
 
-typedef int32_t Word;
-struct Regs {
-    Word* program_base;
-    Word* heap_base;
-    Word* PC;
-    Word* TOSp;
-    Word** Rp;
-    Word A;
-    /* TODO: stack limits. */
-};
 
 void vm_loop(Regs* regs) {
     /* Init from saved state: */
@@ -92,6 +85,9 @@ void vm_loop(Regs* regs) {
 #define STACK_AT(n) (*(TOSp - (n)))
 #define REPLACE(x) (*TOSp = (x))
 #define JUMP(addr) { PC =  (addr); isr = 0; }
+    if (setjmp(regs->jmp_env)) {
+        return;
+    }
     while (1) {
         printf("DB| ISR before shift: %x\n", isr);
         int opcode = isr & OPCODE_MASK;
@@ -207,19 +203,32 @@ void vm_loop(Regs* regs) {
         } break;
     /*---------- Special-operations ------------------------*/
         case BUILTIN: {
-            goto exit_vm;
+            int opID = READ_FROM_INS_STREAM();
+            if (opID < BI_MIN_RANGE && opID >= BI_MAX_RANGE) {
+                fprintf(stderr, "Bad operation ID: %d\n", opID);
+                exit(1);
+            }
+
+            /* Save state: */
+            regs->PC = PC;
+            regs->TOSp = TOSp;
+            regs->Rp = Rp;
+            regs->A = A;
+
+            (*LARUM_BUILT_INS[opID])(regs);
+
+            /* Restore state: */
+            PC   = regs->PC;
+            TOSp = regs->TOSp;
+            Rp   = regs->Rp;
+            A     = regs->A;
         } break;
         } // opcode switch
 #undef PUSH
 #undef POP
     }// loop
 
-exit_vm:
-    /* Save state: */
-    regs->PC = PC;
-    regs->TOSp = TOSp;
-    regs->Rp = Rp;
-    regs->A = A;
+exit_vm: {}
 }
 
 #define INSPACK(a,rest) ((a) | ((rest) << OPCODE_BITS))
@@ -236,7 +245,7 @@ int main() {
         {ASM(LIT, LIT, XOR, NOP, NOP, NOP), 3,9,
          ASM(LIT, LIT, AND, NOP, NOP, NOP), 3,9,
          ASM(LIT, LIT, OR, NOP, NOP, NOP), 3,9,
-         ASM(BUILTIN, NOP, NOP, NOP, NOP, NOP)};
+         ASM(BUILTIN, BI_EXIT, NOP, NOP, NOP, NOP)};
     Word* ret_stack[100];
     Word data_stack[100];
     Word heap[4096];
