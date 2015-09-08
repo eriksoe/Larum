@@ -66,7 +66,6 @@ sub add_opcode($) {
 
 sub emit_parameter($) {
     my ($v) = @_;
-    print STDERR "DB| emit: $v at $destpos\n";
     $dest[$destpos++] = $v;
 }
 
@@ -79,7 +78,6 @@ sub init_isr() {
     $opcode_acc = 0;
     $shift = 0;
     $destpos_opcode = $destpos;
-    print STDERR "DB| opcode-pos: $destpos_opcode\n";
     emit_parameter(-1); # Placeholder - reserve space for opcode;
 }
 
@@ -112,25 +110,25 @@ while (<$in_fh>) {
             #print "${opcode} ${paramtype}\n";
             if ($paramtype eq 'I') {
                 my $v = int($rest);
-                print "${opcode} I:${v}\n";
+                #print "${opcode} I:${v}\n";
                 emit_parameter($v);
             } elsif ($paramtype eq 'L') {
                 my $jump_offset = $rest;
                 # TODO: support symbolic labels.
-                print "${opcode} I:${jump_offset}\n";
+                #print "${opcode} I:${jump_offset}\n";
                 emit_parameter($jump_offset);
             } elsif ($paramtype eq 'B') {
                 my $builtin_name = $rest;
                 if (exists $BUILTIN_DEFS{$builtin_name}) {
                     my $bi_nr = $BUILTIN_DEFS{$builtin_name};
-                    print "${opcode} B:${bi_nr}\n";
+                    #print "${opcode} B:${bi_nr}\n";
                     emit_parameter($bi_nr);
                 } else {
                     die "Unknown builtin: $builtin_name\n";
                 }
             } else {
                 die "Parameter not expected: $rest\n" unless ($rest eq '');
-                print "${opcode}\n";
+                #print "${opcode}\n";
             }
             add_opcode($opcode);
             flush() if (exists $MUST_FLUSH{$mnemonic});
