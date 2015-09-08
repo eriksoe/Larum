@@ -59,6 +59,8 @@ my @dest = ();
 my ($destpos_opcode, $destpos) = (0,0);
 my $opcode_acc;
 my $shift;
+my %labels = ();
+my %patch_table = ();
 
 sub add_opcode($) {
     my ($opcode) = @_;
@@ -71,10 +73,13 @@ sub add_opcode($) {
 
 sub emit_parameter($) {
     my ($v) = @_;
-    $dest[$destpos++] = $v;
+    my $addr = $destpos++;
+    $dest[$addr] = $v;
+    return $addr;
 }
 
 sub flush() {
+    return if ($shift == 0);
     $dest[$destpos_opcode] = $opcode_acc;
     init_isr();
 }
@@ -86,6 +91,16 @@ sub init_isr() {
     emit_parameter(-1); # Placeholder - reserve space for opcode;
 }
 
+sub patch_labels() {
+    for my $patch_addr (keys %patch_table) {
+        my $label = $patch_table{$patch_addr};
+        die "Unknown label: `$label'\n" unless (exists $labels{$label});
+        my $jump_addr = $labels{$label};
+        # print "patching $label = $labels{label} at $patch_addr\n";
+        $dest[$patch_addr] = $jump_addr;
+    }
+}
+
 sub output($) {
     my ($fh) = @_;
     delete $dest[--$destpos] if ($shift == 0);
@@ -95,7 +110,7 @@ sub output($) {
     my $chksum = 0;
     for (my $i=0; $i<=$#dest; $i++) {
         my $d = $dest[$i];
-        #print STDERR "  $i: $dest[$i]\n";
+        # print STDERR "  $i: $d\n";
         syswrite($fh, pack("L", $d));
         { use integer;
           $chksum += $d;
@@ -115,7 +130,13 @@ while (<$in_fh>) {
     # Trim:
     s/^\s+//; s/\s+$//;
 
-    if (/^(\S+)\s*(.*)$/) {
+    if (/^:(\w+)\s*$/) {
+        my $lbl = $1;
+        die "Duplicate label: $lbl @ $.\n" if (exists $labels{$lbl});
+        flush();
+        # print "Defining label `$lbl' = $destpos_opcode\n";
+        $labels{$lbl} = $destpos_opcode;
+    } elsif (/^(\S+)\s*(.*)$/) {
         my ($mnemonic, $rest) = ($1,$2);
         $mnemonic = uc($mnemonic);
         if (exists $OPCODE_DEFS{$mnemonic}) {
@@ -127,10 +148,9 @@ while (<$in_fh>) {
                 #print "${opcode} I:${v}\n";
                 emit_parameter($v);
             } elsif ($paramtype eq 'L') {
-                my $jump_offset = $rest;
-                # TODO: support symbolic labels.
-                #print "${opcode} I:${jump_offset}\n";
-                emit_parameter($jump_offset);
+                my $label = $rest;
+                my $addr = emit_parameter(-1);
+                $patch_table{$addr} = $label;
             } elsif ($paramtype eq 'B') {
                 my $builtin_name = $rest;
                 if (exists $BUILTIN_DEFS{$builtin_name}) {
@@ -152,6 +172,8 @@ while (<$in_fh>) {
     }
 }
 close($in_fh);
+
+patch_labels();
 
 flush();
 
