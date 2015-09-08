@@ -1,0 +1,5 @@
+LIT 6
+LIT 7
+*
+BUILTIN EXIT
+
