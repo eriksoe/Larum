@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "vm.h"
 
@@ -23,8 +24,8 @@ enum Opcode {
     RET,                        /* Pop R and jump to old top */
 
     /*---------- Stack manipulation ------------------------*/
-    DUP,                        /* a b -> a */
-    SWAP,                       /* a b -> b a */
+    DUP,                        /* a b -> a a */
+    DROP,                       /* a b -> a */
     OVER,                       /* a b -> a b a */
 
     /*---------- Internal moves ----------------------------*/
@@ -102,20 +103,21 @@ void vm_loop(Regs* regs) {
         } break;
     /*---------- Control -----------------------------------*/
         case JMP: {
-            JUMP(regs->program_base + READ_FROM_INS_STREAM());
+            Word addr = READ_FROM_INS_STREAM();
+            JUMP(regs->mem + addr);
         } break;
         case JMPZ: {
             Word addr = READ_FROM_INS_STREAM();
-            if (PEEK() == 0) {JUMP(regs->program_base + addr);}
+            if (PEEK() == 0) {JUMP(regs->mem + addr);}
         } break;
         case JMPN: {
             Word addr = READ_FROM_INS_STREAM();
-            if (PEEK() < 0) {JUMP(regs->program_base + addr);}
+            if (PEEK() < 0) {JUMP(regs->mem + addr);}
         } break;
         case CALL: {
             Word addr = READ_FROM_INS_STREAM();
             *(++Rp) = PC;
-            JUMP(regs->program_base + addr);
+            JUMP(regs->mem + addr);
         } break;
         case RET: {
             JUMP(*(Rp--));
@@ -125,11 +127,16 @@ void vm_loop(Regs* regs) {
             Word tmp = PEEK();
             PUSH(tmp);
         } break;
+        case DROP: {
+            POP();
+        } break;
+        /*
         case SWAP: {
             Word tmp = PEEK();
             REPLACE(STACK_AT(1));
             STACK_AT(1) = tmp;
-        } break;
+            } break;
+        */
         case OVER: {
             Word tmp = STACK_AT(1);
             PUSH(tmp);
@@ -181,16 +188,16 @@ void vm_loop(Regs* regs) {
         } break;
     //----- By A:
         case LOAD_A: {
-            PUSH(regs->heap_base[A]);
+            PUSH(regs->mem[A]);
         } break;
         case STORE_A: {
-            regs->heap_base[A] = POP();
+            regs->mem[A] = POP();
         } break;
         case LOAD_A_INC: {
-            PUSH(regs->heap_base[A++]);
+            PUSH(regs->mem[A++]);
         } break;
         case STORE_A_INC: {
-            regs->heap_base[A++] = POP();
+            regs->mem[A++] = POP();
         } break;
     //----- By R:
         case LOAD_R_INC: {
@@ -226,7 +233,6 @@ void vm_loop(Regs* regs) {
 #undef POP
     }// loop
 
-exit_vm: {}
 }
 
 #define INSPACK(a,rest) ((a) | ((rest) << OPCODE_BITS))
@@ -261,19 +267,28 @@ int main() {
      BI_EXIT};
     Word* ret_stack[100];
     Word data_stack[100];
-    Word heap[4096];
+    int ram_size = 1*1024*1024;
+    Word* mem = (Word*)malloc(ram_size);
+    memcpy(mem, program, sizeof(program));
+
+    Word* init_PC = mem;
+    int program_size = sizeof(program) / sizeof(Word);
+
+    // Push initial location info:
+    data_stack[0] = ram_size;
+    data_stack[1] = program_size;
+    int init_sp = 1;
+
     Regs r = {
-        .program_base = program,
-        .heap_base = heap,
-        .PC = program,
-        .TOSp = data_stack-1,
+        .mem = mem,
+        .PC = init_PC,
+        .TOSp = data_stack+init_sp,
         .Rp = ret_stack-1,
         .A = 0
     };
     vm_loop(&r);
-    printf("Stack (height %d): \n", r.TOSp-data_stack+1);
+    printf("Stack (height %ld): \n", r.TOSp-data_stack+1);
     for (Word* p = r.TOSp; p >= data_stack; p--) {
         printf("\t%d\n", *p);
     }
-    printf("Number of used opcodes: %d\n", OPCODE_COUNT);
 }

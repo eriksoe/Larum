@@ -3,8 +3,7 @@
 
 typedef int32_t Word;
 struct Regs {
-    Word* program_base;
-    Word* heap_base;
+    Word* mem;
     Word* PC;
     Word* TOSp;
     Word** Rp;
