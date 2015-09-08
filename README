@@ -1,0 +1,94 @@
+Larum - a tiny VM based on the Gullwing CPU architecture
+========================================================
+
+Instruction set
+---------------
+
+Compared with the Gullwing instruction set:
+
+|======================================================================
+| *Larum*        | *Gullwing equivalent* | *Comment*
+| ---- Flow ---- | ---- Flow ----       |
+| FETCH_INS      | PC@                  |
+| JMP            | JMP                  |
+| JMPZ           | JMP0                 |
+| JMPN           | JMP+                 |
+| CALL           | CALL                 |
+| RET            | RET                  |
+| ---- Memory ---- | ---- Memory ----   |
+| LIT            | LIT                  |
+| LOAD_A_INC     | @A+                  |
+| LOAD_R_INC     | @R+                  |
+| LOAD_A         | @A                   |
+| STORE_A_INC    | !A+                  |
+| STORE_R_INC    | !R+                  |
+| STORE_A        | !A                   |
+| LIT_1          | (n/a)                | Added because it's a useful special case.
+| ---- Computation ---- | ---- Computati|on ----
+| NOT            | NOT                  |
+| AND            | AND                  |
+| XOR            | XOR                  |
+| ADD            | +                    |
+| SHL            | 2*                   | Upgraded to a binary version.
+| SHR            | 2/                   | Upgraded to a binary version.
+| MUL            | +*                   | Upgraded to a full multiply.
+| OR             | (n/a)                | Added since the opcode is available.
+| SUB            | (n/a)                | Added since the opcode is available.
+| ---- Stack ---- | ---- Stack ----     |
+| PUSH_A         | A>                   |
+| POP_A          | >A                   |
+| DUP            | DUP                  |
+| DROP           | DROP                 |
+| OVER           | OVER                 |
+| PUSH_R         | >R                   |
+| POP_R          | R>                   |
+| ---- Misc. ---- | ---- Misc. ----     |
+| NOP            | NOP                  |
+| (n/a)          | UND0                 |
+| (n/a)          | UND1                 |
+| (n/a)          | UND2                 |
+| (n/a)          | UND3                 |
+| BUILTIN        | (n/a)                | Call-out mechanism for I/O etc.
+|======================================================================
+
+Rationale for differences wrt. the Gullwing instruction set:
+
+- Communication with the outside world is needed.
+  A scheme using memory-mapped ports could be used, but would slow down
+  normal execution (and presumably be cumbersome to use).
+  Instead, we use a more direct and flexible approach, in the form of
+  "BUILTIN" opcode (parameterized with an operation number)
+  which represents all necessary external services.
+
+- Since the hardware for it is already there, we provide
+  full shift- and multiply operations, rather than the hardware-wiser simpler
+  "shift by one" and "single multiply step" instructions.
+
+- Gullwing has four unused opcodes. We might as well use those.
+
+- Subtraction and OR have been added, so that they don't need to be composed
+  using other instructions.
+
+- LIT_1 has been added; it's a common special case which is often useful,
+  e.g. when incrementing, decrementing, and shifting by one place,
+  for bitmasks, and also for creating other constants.
+  (The Gullwing instruction set use the constant 1 for subtraction and
+  negation, so it could have benefitted from it as well.)
+
+
+Word size
+---------
+
+Larum is a 32 bit machine like its ancestor.
+Program and data words are 32 bits.
+
+Memory addresses are also 32 bits - even if the underlying platform is 64 bit.
+This means that, on 64 bit platforms at least, addresses are *relative
+to the start of the data memory*.
+
+This introduces some address arithmetic into the implementation, but
+is simple than the alternative - using double-word addresses, perhaps with an
+aligment requirement.
+(Another alternatives are: requiring data memory to be 2^32-aligned, and storing the low 32 bits of addresses (would also imply address calculations - and probably more expensive ones); letting the A register and the R stack be 64-bit on 64-bit platforms (less flexible).)
+
+
