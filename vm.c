@@ -13,6 +13,11 @@
 #define OPCODE_BITS 5
 #define OPCODE_MASK ((1 << OPCODE_BITS) - 1)
 
+/* The magic number for the file is the UTF-8 # encoding of "䷢L",
+ * where L is for "Larum" and "䷢" is "HEXAGRAM FOR PROGRESS"
+ * (Larum is a Forth machine, after all). */
+const uint32_t IMG_MAGIC = 0x4ca2b7e4; // For little-endian.
+
 enum Opcode {
     /*---------- Special -----------------------------------*/
     FETCH_INS = 0,
@@ -312,14 +317,30 @@ static int load_boot_file(const char* bootfile, Word* mem, int ram_size) {
     int pos = 0;
     int left = ram_size;
     int nread;
+    Word magic;
+    Word chksum;
+    if (fread(&magic, sizeof(Word), 1, f) != 1) goto read_error;
+    if (magic != IMG_MAGIC) error("The file `%s' is not a boot file.", bootfile);
+    if (fread(&chksum, sizeof(Word), 1, f) != 1) goto read_error;
+
     while ((nread = fread(&mem[pos], sizeof(Word), left, f)) != 0) {
         // fprintf(stderr, "Read: %d pos: %d left: %d\n", nread, pos, left);
         pos += nread; left -= nread;
     }
-    if (ferror(f)) error("Boot file load failure: %s", strerror(errno));
+    if (ferror(f)) goto read_error;
+
+    {
+        Word sum = 0;
+        for (int i=0; i<pos; i++) sum += mem[i];
+        if (sum != chksum) error("The bootfile `%s' had a bad checksum and is unusable", bootfile);
+    }
 
     fclose(f);
     return pos;
+
+read_error:
+    error("Boot file load failure: %s", strerror(errno));
+    return 0;
 }
 
 static void error(const char* format, ...) {

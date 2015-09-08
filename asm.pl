@@ -8,6 +8,11 @@
 
 use integer;
 
+# The magic number for the file is the UTF-8 # encoding of "䷢L",
+# where L is for "Larum" and "䷢" is "HEXAGRAM FOR PROGRESS"
+# (Larum is a Forth machine, after all).
+$IMG_MAGIC = "\xe4\xb7\xa2\x4c";
+
 %OPCODE_DEFS = (
     "\@PC"  => [0],
     "NOP"  => [1],
@@ -82,13 +87,22 @@ sub init_isr() {
 }
 
 sub output($) {
-    my ($out_fh) = @_;
+    my ($fh) = @_;
     delete $dest[--$destpos] if ($shift == 0);
+
+    syswrite($fh, $IMG_MAGIC);
+    syswrite($fh, pack("L", -1)); # Placeholder for checksum
+    my $chksum = 0;
     for (my $i=0; $i<=$#dest; $i++) {
-        print STDERR "  $i: $dest[$i]\n";
-        my $x = pack("L", $dest[$i]);
-        syswrite($out_fh, $x);
+        my $d = $dest[$i];
+        #print STDERR "  $i: $dest[$i]\n";
+        syswrite($fh, pack("L", $d));
+        { use integer;
+          $chksum += $d;
+        }
     }
+    seek($fh, 4, 0);
+    syswrite($fh, pack("L", $chksum));
 }
 
 init_isr();
