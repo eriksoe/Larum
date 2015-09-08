@@ -1,5 +1,7 @@
+CFLAGS = -Wall -ggdb
+
 build:
-	g++ -Wall *.c -o larum.exe
+	g++ ${CFLAGS} *.c -o larum.exe
 
 clean:
 	rm *.o *.so *.exe || true

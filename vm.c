@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
+#include <errno.h>
 
 #include "vm.h"
 
@@ -238,7 +240,17 @@ void vm_loop(Regs* regs) {
 #define INSPACK(a,rest) ((a) | ((rest) << OPCODE_BITS))
 #define ASM(a,b,c,d,e,f) INSPACK((a), INSPACK((b), INSPACK((c), INSPACK((d), INSPACK((e), (f) )))))
 
-int main() {
+static void error(const char* format, ...);
+static void usage(const char* prgname);
+static int load_boot_file(const char* bootfile, Word* mem, int ram_size);
+
+int main(int argc, const char** argv) {
+    if (argc != 2) {
+        usage(argv[0]);
+    }
+    const char* bootfile = argv[1];
+
+    /*
     Word program[] =
         //{ASM(LIT_1, LIT_1, ADD, BUILTIN, NOP, NOP)};
         //{ASM(LIT_1, LIT, ADD, BUILTIN, NOP, NOP), 41};
@@ -246,33 +258,30 @@ int main() {
         //{ASM(LIT, DUP, ADD, BUILTIN, NOP, NOP), 7};
         //{ASM(LIT, LIT, SUB, NOP, NOP, NOP), 7,9, ASM(LIT, LIT, SWAP, SUB, BUILTIN, NOP), 7,9};
     //{ASM(LIT, LIT, OVER, BUILTIN, NOP, NOP), 7,9};
-        /*
-        {ASM(LIT, LIT, XOR, NOP, NOP, NOP), 3,9,
-         ASM(LIT, LIT, AND, NOP, NOP, NOP), 3,9,
-         ASM(LIT, LIT, OR, NOP, NOP, NOP), 3,9,
-         ASM(BUILTIN, NOP, NOP, NOP, NOP, NOP), BI_EXIT};
-        */
-        /*
-        {ASM(BUILTIN, BUILTIN, NOP, NOP, NOP, NOP),
-         BI_HELLO, BI_EXIT};
-        */
-        /*
-        {ASM(BUILTIN, JMP, NOP, NOP, NOP, NOP), // Call "Hello" indefinitely.
-         BI_HELLO, 0};
-        */
+    //    {ASM(LIT, LIT, XOR, NOP, NOP, NOP), 3,9,
+    //     ASM(LIT, LIT, AND, NOP, NOP, NOP), 3,9,
+    //     ASM(LIT, LIT, OR, NOP, NOP, NOP), 3,9,
+    //     ASM(BUILTIN, NOP, NOP, NOP, NOP, NOP), BI_EXIT};
+    //    {ASM(BUILTIN, BUILTIN, NOP, NOP, NOP, NOP),
+    //     BI_HELLO, BI_EXIT};
+    //    {ASM(BUILTIN, JMP, NOP, NOP, NOP, NOP), // Call "Hello" indefinitely.
+    //     BI_HELLO, 0};
     {ASM(LIT, 0,0,0,0,0), 10, // Call "Hello" ten times.
      ASM(JMPZ, BUILTIN, LIT_1, SUB, JMP, 0),
      6, BI_HELLO, 1,
      ASM(BUILTIN, 0,0,0,0,0), //TODO: ought to pop.
      BI_EXIT};
+    */
+
     Word* ret_stack[100];
     Word data_stack[100];
     int ram_size = 1*1024*1024;
     Word* mem = (Word*)malloc(ram_size);
-    memcpy(mem, program, sizeof(program));
+    if (!mem) error("Could not allocate memory.");
+    int program_size = load_boot_file(bootfile, mem, ram_size);
+    fprintf(stderr, "Boot image loaded - size=%d\n", program_size);
 
     Word* init_PC = mem;
-    int program_size = sizeof(program) / sizeof(Word);
 
     // Push initial location info:
     data_stack[0] = ram_size;
@@ -291,4 +300,35 @@ int main() {
     for (Word* p = r.TOSp; p >= data_stack; p--) {
         printf("\t%d\n", *p);
     }
+}
+
+static void usage(const char* prgname) {
+    error("Usage: %s <bootfile>", prgname);
+}
+
+static int load_boot_file(const char* bootfile, Word* mem, int ram_size) {
+    FILE* f = fopen(bootfile, "r");
+    if (!f) error("Could not open boot file `%s': %s", bootfile, strerror(errno));
+    int pos = 0;
+    int left = ram_size;
+    int nread;
+    while ((nread = fread(&mem[pos], sizeof(Word), left, f)) != 0) {
+        // fprintf(stderr, "Read: %d pos: %d left: %d\n", nread, pos, left);
+        pos += nread; left -= nread;
+    }
+    if (ferror(f)) error("Boot file load failure: %s", strerror(errno));
+
+    fclose(f);
+    return pos;
+}
+
+static void error(const char* format, ...) {
+    va_list args;
+
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
+    fprintf(stderr, "\n");
+
+    exit(1);
 }
