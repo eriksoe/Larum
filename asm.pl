@@ -8,10 +8,9 @@
 
 use integer;
 
-# The magic number for the file is the UTF-8 # encoding of "䷢L",
-# where L is for "Larum" and "䷢" is "HEXAGRAM FOR PROGRESS"
-# (Larum is a Forth machine, after all).
-$IMG_MAGIC = "\xe4\xb7\xa2\x4c";
+# The magic number for the file is the UTF-8 # encoding of "L̼B",
+# where L is for "Larum" and "̼" is a seagull, and "B" is for "boot image".
+$IMG_MAGIC = "\x4c\xcc\xbc\x42";
 
 %OPCODE_DEFS = (
     "\@PC"  => [0],

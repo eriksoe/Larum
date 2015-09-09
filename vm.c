@@ -13,10 +13,10 @@
 #define OPCODE_BITS 5
 #define OPCODE_MASK ((1 << OPCODE_BITS) - 1)
 
-/* The magic number for the file is the UTF-8 # encoding of "䷢L",
- * where L is for "Larum" and "䷢" is "HEXAGRAM FOR PROGRESS"
- * (Larum is a Forth machine, after all). */
-const uint32_t IMG_MAGIC = 0x4ca2b7e4; // For little-endian.
+/* The magic number for the file is the UTF-8 # encoding of "L̼B",
+ * where L is for "Larum" and "̼" is a seagull, and "B" is for "boot image".
+ */
+const uint32_t IMG_MAGIC = 0x42bccc4c; // For little-endian.
 
 enum Opcode {
     /*---------- Special -----------------------------------*/
