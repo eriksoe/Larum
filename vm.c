@@ -170,10 +170,12 @@ void vm_loop(Regs* regs) {
         } break;
     /*---------- Bitwise operations ------------------------*/
         case SHR: {
-            REPLACE(PEEK() >> 1);
+            Word tmp = POP();
+            REPLACE(PEEK() >> tmp);
         } break;
         case SHL: {
-            REPLACE(PEEK() << 1);
+            Word tmp = POP();
+            REPLACE(PEEK() << tmp);
         } break;
         case NOT: {
             REPLACE(~PEEK());
