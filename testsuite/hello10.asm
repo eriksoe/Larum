@@ -1,5 +1,6 @@
 LIT 10
 :loop
+DUP
 JMPZ endloop
 BUILTIN HELLO
 LIT1
