@@ -3,12 +3,17 @@
 
 typedef int32_t Word;
 struct Regs {
+    // Static:
     Word* mem;
+    Word* data_stack;
+    Word** return_stack;
+    /* TODO: stack limits. */
+
+    // Dynamis:
     Word* PC;
     Word* TOSp;
     Word** Rp;
     Word A;
-    /* TODO: stack limits. */
 
     jmp_buf jmp_env;
 };
@@ -22,5 +27,7 @@ enum BuiltInIDs {
     BI_MIN_RANGE = 0,
     BI_EXIT = 0,
     BI_HELLO,
+    BI_DUMP_STACK,
+    BI_WRITE_STDOUT,
     BI_MAX_RANGE
 };

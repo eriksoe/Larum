@@ -50,7 +50,9 @@ $IMG_MAGIC = "\x4c\xcc\xbc\x42";
 
 %BUILTIN_DEFS = (
     "EXIT" => 0,
-    "HELLO" => 1
+    "HELLO" => 1,
+    "DUMP_STACK" => 2,
+    "WRITE_STDOUT" => 3,
 );
 
 %MUST_FLUSH = ( "CALL" => 1);

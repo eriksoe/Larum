@@ -301,6 +301,8 @@ int main(int argc, const char** argv) {
 
     Regs r = {
         .mem = mem,
+        .data_stack = data_stack,
+        .return_stack = ret_stack,
         .PC = init_PC,
         .TOSp = data_stack+init_sp,
         .Rp = ret_stack-1,
