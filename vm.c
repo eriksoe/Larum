@@ -216,7 +216,7 @@ void vm_loop(Regs* regs) {
         } break;
     //----- By R:
         case LOAD_R_INC: {
-            //PUSH((Word)(*Rp++));
+            PUSH((*Rp++) - regs->mem);
         } break;
         case STORE_R_INC: {
             //(*Rp++) = POP();
