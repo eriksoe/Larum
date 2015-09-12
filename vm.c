@@ -115,11 +115,11 @@ void vm_loop(Regs* regs) {
         } break;
         case JMPZ: {
             Word addr = READ_FROM_INS_STREAM();
-            if (PEEK() == 0) {JUMP(regs->mem + addr);}
+            if (POP() == 0) {JUMP(regs->mem + addr);}
         } break;
         case JMPN: {
             Word addr = READ_FROM_INS_STREAM();
-            if (PEEK() < 0) {JUMP(regs->mem + addr);}
+            if (POP() < 0) {JUMP(regs->mem + addr);}
         } break;
         case CALL: {
             Word addr = READ_FROM_INS_STREAM();
