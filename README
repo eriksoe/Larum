@@ -7,48 +7,48 @@ Instruction set
 Compared with the Gullwing instruction set:
 
 |======================================================================
-| *Larum*        | *Gullwing equivalent* | *Comment*
-| ---- Flow ---- | ---- Flow ----       |
-| FETCH_INS      | PC@                  |
-| JMP            | JMP                  |
-| JMPZ           | JMP0                 |
-| JMPN           | JMP+                 |
-| CALL           | CALL                 |
-| RET            | RET                  |
-| ---- Memory ---- | ---- Memory ----   |
-| LIT            | LIT                  |
-| LOAD_A_INC     | @A+                  |
-| LOAD_R_INC     | @R+                  |
-| LOAD_A         | @A                   |
-| STORE_A_INC    | !A+                  |
-| STORE_R_INC    | !R+                  |
-| STORE_A        | !A                   |
-| LIT_1          | (n/a)                | Added because it's a useful special case.
+| *Larum*            | *Gullwing equivalent* | *Comment*
+| ---- Flow ----     | ---- Flow ----       |
+| PC@ (FETCH_INS)    | PC@                  |
+| JMP                | JMP                  |
+| JMPZ               | JMP0                 |
+| JMPN               | JMP+                 |
+| CALL               | CALL                 |
+| RET                | RET                  |
+| ---- Memory ----   | ---- Memory ----   |
+| LIT                | LIT                  |
+| @A+ (LOAD_A_INC)   | @A+                  |
+| @R+ (LOAD_R_INC)   | @R+                  |
+| @A (LOAD_A)        | @A                   |
+| !A+ (STORE_A_INC)  | !A+                  |
+| !R+ (STORE_R_INC)  | !R+                  |
+| !A (STORE_A)       | !A                   |
+| LIT1 (LIT_1)       | (n/a)                | Added because it's a useful special case.
 | ---- Computation ---- | ---- Computati|on ----
-| NOT            | NOT                  |
-| AND            | AND                  |
-| XOR            | XOR                  |
-| ADD            | +                    |
-| SHL            | 2*                   | Upgraded to a binary version.
-| SHR            | 2/                   | Upgraded to a binary version.
-| MUL            | +*                   | Upgraded to a full multiply.
-| OR             | (n/a)                | Added since the opcode is available.
-| SUB            | (n/a)                | Added since the opcode is available.
-| ---- Stack ---- | ---- Stack ----     |
-| PUSH_A         | A>                   |
-| POP_A          | >A                   |
-| DUP            | DUP                  |
-| DROP           | DROP                 |
-| OVER           | OVER                 |
-| PUSH_R         | >R                   |
-| POP_R          | R>                   |
-| ---- Misc. ---- | ---- Misc. ----     |
-| NOP            | NOP                  |
-| (n/a)          | UND0                 |
-| (n/a)          | UND1                 |
-| (n/a)          | UND2                 |
-| (n/a)          | UND3                 |
-| BUILTIN        | (n/a)                | Call-out mechanism for I/O etc.
+| NOT                | NOT                  |
+| AND                | AND                  |
+| XOR                | XOR                  |
+| + (ADD)            | +                    |
+| << (SHL)           | 2*                   | Upgraded to a binary version.
+| >> (SHR)           | 2/                   | Upgraded to a binary version.
+| * (MUL)            | +*                   | Upgraded to a full multiply.
+| OR                 | (n/a)                | Added since the opcode is available.
+| - (SUB)            | (n/a)                | Added since the opcode is available.
+| ---- Stack ----    | ---- Stack ----     |
+| A> (PUSH_A)        | A>                   |
+| >A (POP_A)         | >A                   |
+| DUP                | DUP                  |
+| DROP               | DROP                 |
+| OVER               | OVER                 |
+| >R (PUSH_R)        | >R                   |
+| R> (POP_R)         | R>                   |
+| ---- Misc. ----    | ---- Misc. ----     |
+| (n/a)              | NOP                  | No NOP is needed; PC@ can be used.
+| (n/a)              | UND0                 |
+| (n/a)              | UND1                 |
+| (n/a)              | UND2                 |
+| (n/a)              | UND3                 |
+| BUILTIN            | (n/a)                | Call-out mechanism for I/O etc.
 |======================================================================
 
 Rationale for differences wrt. the Gullwing instruction set:
@@ -64,6 +64,12 @@ Rationale for differences wrt. the Gullwing instruction set:
   full shift- and multiply operations, rather than the hardware-wiser simpler
   "shift by one" and "single multiply step" instructions.
 
+- NOP is not needed; PC@ can be used instead. (This is also the case
+  for a slightly changed Gullwing; NOP is used internally in some of
+  its described variants.)
+
+- Of `!R+` and `!A+`, only one is really needed. `!R+` has been taken out.
+
 - Gullwing has four unused opcodes. We might as well use those.
 
 - Subtraction and OR have been added, so that they don't need to be composed
@@ -74,6 +80,12 @@ Rationale for differences wrt. the Gullwing instruction set:
   for bitmasks, and also for creating other constants.
   (The Gullwing instruction set use the constant 1 for subtraction and
   negation, so it could have benefitted from it as well.)
+
+- String-manipulation becomes awkward in Gullwing, as it lacks byte-oriented
+  operations. To remediate that, two operations have been added which
+  uses the A register for addressing bytes: `@AB+` and `!AB+`.
+  (Note that a word-based memory address needs to be multiplied by 4 to obtain
+  the corresponding byte-based memory address.)
 
 
 Word size

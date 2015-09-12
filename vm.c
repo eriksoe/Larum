@@ -21,7 +21,6 @@ const uint32_t IMG_MAGIC = 0x42bccc4c; // For little-endian.
 enum Opcode {
     /*---------- Special -----------------------------------*/
     FETCH_INS = 0,
-    NOP,
 
     /*---------- Control -----------------------------------*/
     JMP,                        /* Jump unconditionally <address> */
@@ -67,7 +66,10 @@ enum Opcode {
     STORE_A_INC,                /* Store with post-inc */
     //----- By R:
     LOAD_R_INC,                 /* Load with post-inc */
-    STORE_R_INC,                /* Store with post-inc */
+
+    //----- By AB (byte-oriented):
+    LOAD_AB_INC,                /* Load byte with post-inc */
+    STORE_AB_INC,               /* Store byte with post-inc */
 
     /*---------- Special-operations ------------------------*/
     BUILTIN,                    /* Special, complex operation <op-addr> */
@@ -105,8 +107,6 @@ void vm_loop(Regs* regs) {
             /*---------- Special -----------------------------------*/
         case FETCH_INS: {
             isr = READ_FROM_INS_STREAM();
-        } break;
-        case NOP: {
         } break;
     /*---------- Control -----------------------------------*/
         case JMP: {
@@ -218,9 +218,15 @@ void vm_loop(Regs* regs) {
         case LOAD_R_INC: {
             PUSH((*Rp++) - regs->mem);
         } break;
-        case STORE_R_INC: {
-            //(*Rp++) = POP();
+
+    //----- Byte-oriented:
+        case LOAD_AB_INC: {
+            PUSH( ((unsigned char*)(regs->mem))[A++] );
         } break;
+        case STORE_AB_INC: {
+            ((unsigned char*)(regs->mem))[A++] = POP();
+        } break;
+
     /*---------- Special-operations ------------------------*/
         case BUILTIN: {
             int opID = READ_FROM_INS_STREAM();
