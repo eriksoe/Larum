@@ -24,11 +24,9 @@ static void LarumDumpStack(Regs* state) {
 }
 
 static void LarumWriteStdout(Regs* state) {
-    printf("DB| In LarumWriteStdout\n");
     Word count = POP();
     Word addr = POP();
-    printf("DB| In LarumWriteStdout count=%d addr=%x\n", count, addr);
-    fwrite(state->mem + addr, 1, count, stdout);
+    fwrite( ((char*)state->mem) + addr, 1, count, stdout);
 }
 
 LarumBuiltIn LARUM_BUILT_INSx[] = {
