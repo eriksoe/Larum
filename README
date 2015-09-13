@@ -83,7 +83,7 @@ Rationale for differences wrt. the Gullwing instruction set:
 
 - String-manipulation becomes awkward in Gullwing, as it lacks byte-oriented
   operations. To remediate that, two operations have been added which
-  uses the A register for addressing bytes: `@AB+` and `!AB+`.
+  uses the A register for addressing bytes: `B@A+` and `B!A+`.
 
 
 Word size

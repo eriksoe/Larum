@@ -18,7 +18,7 @@ DROP
 DUP
 LIT 48
 +
-!AB+
+B!A+
 
 # Increment:
 LIT1

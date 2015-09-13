@@ -67,9 +67,9 @@ enum Opcode {
     //----- By R:
     LOAD_R_INC,                 /* Load with post-inc */
 
-    //----- By AB (byte-oriented):
-    LOAD_AB_INC,                /* Load byte with post-inc */
-    STORE_AB_INC,               /* Store byte with post-inc */
+    //----- By A (byte-oriented):
+    LOAD_BYTE_A_INC,                /* Load byte with post-inc */
+    STORE_BYTE_A_INC,               /* Store byte with post-inc */
 
     /*---------- Special-operations ------------------------*/
     BUILTIN,                    /* Special, complex operation <op-addr> */
@@ -229,10 +229,10 @@ void vm_loop(Regs* regs) {
         } break;
 
     //----- Byte-oriented:
-        case LOAD_AB_INC: {
+        case LOAD_BYTE_A_INC: {
             PUSH( ((unsigned char*)(regs->mem))[A++] );
         } break;
-        case STORE_AB_INC: {
+        case STORE_BYTE_A_INC: {
             ((unsigned char*)(regs->mem))[A++] = POP();
         } break;
 
