@@ -6,13 +6,13 @@ struct Regs {
     // Static:
     Word* mem;
     Word* data_stack;
-    Word** return_stack;
+    Word* return_stack;
     /* TODO: stack limits. */
 
     // Dynamis:
     Word* PC;
     Word* TOSp;
-    Word** Rp;
+    Word* Rp;
     Word A;
 
     jmp_buf jmp_env;

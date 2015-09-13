@@ -82,7 +82,7 @@ void vm_loop(Regs* regs) {
     /* Init from saved state: */
     Word* PC   = regs->PC;
     Word* TOSp = regs->TOSp;
-    Word** Rp   = regs->Rp;
+    Word* Rp   = regs->Rp;
     Word A     = regs->A;
 
     /* Init other state: */
@@ -94,7 +94,10 @@ void vm_loop(Regs* regs) {
 #define PEEK() (*TOSp)
 #define STACK_AT(n) (*(TOSp - (n)))
 #define REPLACE(x) (*TOSp = (x))
-#define JUMP(addr) { PC =  (addr); isr = 0; }
+#define JUMP(addr) { PC = (regs->mem + (addr)); isr = 0; }
+#define PUSH_R(x) {*(++Rp) = (x);}
+#define POP_R() (*(Rp--))
+#define PEEK_R(x) (*Rp)
     if (setjmp(regs->jmp_env)) {
         return;
     }
@@ -111,23 +114,23 @@ void vm_loop(Regs* regs) {
     /*---------- Control -----------------------------------*/
         case JMP: {
             Word addr = READ_FROM_INS_STREAM();
-            JUMP(regs->mem + addr);
+            JUMP(addr);
         } break;
         case JMPZ: {
             Word addr = READ_FROM_INS_STREAM();
-            if (POP() == 0) {JUMP(regs->mem + addr);}
+            if (POP() == 0) {JUMP(addr);}
         } break;
         case JMPN: {
             Word addr = READ_FROM_INS_STREAM();
-            if (POP() < 0) {JUMP(regs->mem + addr);}
+            if (POP() < 0) {JUMP(addr);}
         } break;
         case CALL: {
             Word addr = READ_FROM_INS_STREAM();
-            *(++Rp) = PC;
-            JUMP(regs->mem + addr);
+            PUSH_R(PC - regs->mem);
+            JUMP(addr);
         } break;
         case RET: {
-            JUMP(*(Rp--));
+            JUMP(POP_R());
         } break;
     /*---------- Stack manipulation ------------------------*/
         case DUP: {
@@ -216,7 +219,7 @@ void vm_loop(Regs* regs) {
         } break;
     //----- By R:
         case LOAD_R_INC: {
-            PUSH((*Rp++) - regs->mem);
+            PUSH(regs->mem[PEEK_R()++]);
         } break;
 
     //----- Byte-oriented:
@@ -292,7 +295,7 @@ int main(int argc, const char** argv) {
      BI_EXIT};
     */
 
-    Word* ret_stack[100];
+    Word ret_stack[100];
     Word data_stack[100];
     int ram_size = 1*1024*1024;
     Word* mem = (Word*)malloc(ram_size);
