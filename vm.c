@@ -158,6 +158,12 @@ void vm_loop(Regs* regs) {
         case POP_A: {
             A = POP();
         } break;
+        case PUSH_R: {
+            PUSH(POP_R());
+        } break;
+        case POP_R: {
+            PUSH_R(POP());
+        } break;
     /*---------- Arithmetic --------------------------------*/
         case ADD: {
             Word tmp = POP();
