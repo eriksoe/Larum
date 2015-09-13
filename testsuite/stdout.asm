@@ -8,8 +8,6 @@ BUILTIN EXIT
 
 :build_string
 ADDR buf
-LIT 2
-<<
 >A
 LIT 40
 LIT 0
@@ -39,8 +37,6 @@ RET
 
 :output_string
 ADDR buf
-LIT 2
-<<
 LIT 40
 BUILTIN WRITE_STDOUT
 RET

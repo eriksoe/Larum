@@ -94,7 +94,7 @@ void vm_loop(Regs* regs) {
 #define PEEK() (*TOSp)
 #define STACK_AT(n) (*(TOSp - (n)))
 #define REPLACE(x) (*TOSp = (x))
-#define JUMP(addr) { PC = (regs->mem + (addr)); isr = 0; }
+#define JUMP(addr) { PC = (Word*)((char*)(regs->mem) + (addr)); isr = 0; }
 #define PUSH_R(x) {*(++Rp) = (x);}
 #define POP_R() (*(Rp--))
 #define PEEK_R(x) (*Rp)
@@ -126,7 +126,7 @@ void vm_loop(Regs* regs) {
         } break;
         case CALL: {
             Word addr = READ_FROM_INS_STREAM();
-            PUSH_R(PC - regs->mem);
+            PUSH_R((char*)PC - (char*)regs->mem);
             JUMP(addr);
         } break;
         case RET: {

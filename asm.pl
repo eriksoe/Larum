@@ -77,8 +77,10 @@ sub emit_parameter($) {
     my ($v) = @_;
     my $addr = $destpos++;
     $dest[$addr] = $v;
-    return $addr;
+    return $addr; # Multiply to get byte-oriented address.
 }
+
+sub to_byte_oriented_address($) {return 4 * $_[0];}
 
 sub flush() {
     return if ($shift == 0);
@@ -151,7 +153,7 @@ while (<$in_fh>) {
         die "Duplicate label: $lbl @ $.\n" if (exists $labels{$lbl});
         flush();
         # print "Defining label `$lbl' = $destpos_opcode\n";
-        $labels{$lbl} = $destpos_opcode;
+        $labels{$lbl} = to_byte_oriented_address($destpos_opcode);
     } elsif (/^(\S+)\s*(.*)$/) {
         my ($mnemonic, $rest) = ($1,$2);
         $mnemonic = uc($mnemonic);
@@ -188,7 +190,7 @@ while (<$in_fh>) {
                 my $varname = $1;
                 my $varsize = ($3 or 1);
                 flush();
-                $labels{$varname} = $destpos_opcode;
+                $labels{$varname} = to_byte_oriented_address($destpos_opcode);
                 print "DB| defining label '$varname' to be here at $destpos_opcode\n";
                 reserve_mem($varsize);
             }

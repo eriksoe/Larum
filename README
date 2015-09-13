@@ -84,8 +84,6 @@ Rationale for differences wrt. the Gullwing instruction set:
 - String-manipulation becomes awkward in Gullwing, as it lacks byte-oriented
   operations. To remediate that, two operations have been added which
   uses the A register for addressing bytes: `@AB+` and `!AB+`.
-  (Note that a word-based memory address needs to be multiplied by 4 to obtain
-  the corresponding byte-based memory address.)
 
 
 Word size
@@ -103,4 +101,5 @@ is simple than the alternative - using double-word addresses, perhaps with an
 aligment requirement.
 (Another alternatives are: requiring data memory to be 2^32-aligned, and storing the low 32 bits of addresses (would also imply address calculations - and probably more expensive ones); letting the A register and the R stack be 64-bit on 64-bit platforms (less flexible).)
 
-
+Another difference from Gullwing is that addresses are byte- rather
+than word-addresses: the second word in memory has address 4, not 1.
