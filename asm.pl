@@ -55,7 +55,7 @@ $IMG_MAGIC = "\x4c\xcc\xbc\x42";
     "WRITE_STDOUT" => 3,
 );
 
-%MUST_FLUSH = ( "CALL" => 1);
+%MUST_FLUSH = ( "CALL" => 1, "BUILTIN" => 1);
 
 my @dest = ();
 my ($destpos_opcode, $destpos) = (0,0);
