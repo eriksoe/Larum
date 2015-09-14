@@ -58,14 +58,14 @@ $IMG_MAGIC = "\x4c\xcc\xbc\x42";
 %MUST_FLUSH = ( "CALL" => 1, "BUILTIN" => 1);
 
 my @dest = ();
-my ($destpos_opcode, $destpos) = (0,0);
-my $opcode_acc;
-my $shift;
+my $destpos = 0;
+my ($destpos_opcode, $opcode_acc, $shift);
 my %labels = ();
 my %patch_table = ();
 
-sub add_opcode($) {
+sub emit_opcode($) {
     my ($opcode) = @_;
+    init_isr() if (!defined $destpos_opcode);
     $opcode_acc |= ($opcode << $shift);
     $shift += 5;
     if ($shift > 32-5) {
@@ -73,34 +73,37 @@ sub add_opcode($) {
     }
 }
 
-sub emit_parameter($) {
+sub emit_raw($) {
     my ($v) = @_;
     my $addr = $destpos++;
     $dest[$addr] = $v;
     return $addr; # Multiply to get byte-oriented address.
 }
 
+sub emit_parameter($) {
+    emit_raw($_[0]);
+}
+
 sub to_byte_oriented_address($) {return 4 * $_[0];}
 
 sub flush() {
-    return if ($shift == 0);
+    return unless (defined $destpos_opcode);
     $dest[$destpos_opcode] = $opcode_acc;
-    init_isr();
+
+    ($destpos_opcode, $opcode_acc, $shift) = (undef,undef,undef);
 }
 
 sub reserve_mem($) {
-    delete $dest[--$destpos] if ($shift == 0);
+    flush();
     my ($wordcount) = @_;
     for (my $i=0; $i<$wordcount; $i++) {
-        emit_parameter(0);
+        emit_raw(0);
     }
-    init_isr();
 }
 
 sub init_isr() {
-    $opcode_acc = 0;
-    $shift = 0;
-    $destpos_opcode = $destpos;
+    die "Double init_isr" if (defined $destpos_opcode);
+    ($destpos_opcode, $opcode_acc, $shift) = ($destpos, 0, 0);
     emit_parameter(-1); # Placeholder - reserve space for opcode;
 }
 
@@ -118,7 +121,6 @@ sub patch_labels() {
 
 sub output($) {
     my ($fh) = @_;
-    delete $dest[--$destpos] if ($shift == 0);
 
     syswrite($fh, $IMG_MAGIC);
     syswrite($fh, pack("L", -1)); # Placeholder for checksum
@@ -134,8 +136,6 @@ sub output($) {
     seek($fh, 4, 0);
     syswrite($fh, pack("L", $chksum));
 }
-
-init_isr();
 
 my $asmfile = $ARGV[0] or die "No asm file name given.\n";
 my $imgfile = $asmfile; $imgfile =~ s/\.asm$//; $imgfile .= ".img";
@@ -153,7 +153,7 @@ while (<$in_fh>) {
         die "Duplicate label: $lbl @ $.\n" if (exists $labels{$lbl});
         flush();
         # print "Defining label `$lbl' = $destpos_opcode\n";
-        $labels{$lbl} = to_byte_oriented_address($destpos_opcode);
+        $labels{$lbl} = to_byte_oriented_address($destpos);
     } elsif (/^(\S+)\s*(.*)$/) {
         my ($mnemonic, $rest) = ($1,$2);
         $mnemonic = uc($mnemonic);
@@ -161,6 +161,7 @@ while (<$in_fh>) {
             my $opdef = $OPCODE_DEFS{$mnemonic};
             my ($opcode, $paramtype) = ($opdef->[0], ($opdef->[1] or ''));
             #print "${opcode} ${paramtype}\n";
+            emit_opcode($opcode);
             if ($paramtype eq 'I') {
                 my $v = int($rest);
                 #print "${opcode} I:${v}\n";
@@ -182,7 +183,6 @@ while (<$in_fh>) {
                 die "Parameter not expected: $rest\n" unless ($rest eq '');
                 #print "${opcode}\n";
             }
-            add_opcode($opcode);
             flush() if (exists $MUST_FLUSH{$mnemonic});
         } elsif ($mnemonic eq 'VAR') {
             print "VAR: $rest\n";
@@ -190,9 +190,20 @@ while (<$in_fh>) {
                 my $varname = $1;
                 my $varsize = ($3 or 1);
                 flush();
-                $labels{$varname} = to_byte_oriented_address($destpos_opcode);
-                print "DB| defining label '$varname' to be here at $destpos_opcode\n";
+                $labels{$varname} = to_byte_oriented_address($destpos);
+                print "DB| defining label '$varname' to be here at $destpos\n";
                 reserve_mem($varsize);
+            }
+        } elsif ($mnemonic eq 'STRING') { # A counted string
+            die "Bad string value: $rest" unless ($rest =~ /^\s*"(.*)"\s*$/);
+            my $value = $1;
+            print "STRING: $value\n";
+            flush();
+            my $bytes = pack("Ca*x![L]", length($value), $value);
+            my @words = unpack("L*", $bytes);
+            for my $w (@words) {
+                print "String word: $w\n";
+                emit_raw($w);
             }
         } else {
             die "Undefined mnemonic: $mnemonic\n";
